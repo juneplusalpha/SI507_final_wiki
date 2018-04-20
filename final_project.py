@@ -13,7 +13,6 @@ BASEURL_EDIT = 'https://en.wikipedia.org/w/index.php?title='
 EDIT_BIT = '&action=history'
 EDIT_CACHE = 'edit_cache.json'
 DBNAME = 'WikiSearch.db'
-search_dict = {}
 edit_dict = {}
 searched_words_list = []
 
@@ -37,6 +36,16 @@ try:
 except:
 	EDIT_DICT = {} # YT_CACHE = {}
 	# print("making edit cache dict")
+
+try:
+	f = open('data.json', "r")
+	fr = f.read()
+	search_dict = json.loads(fr)
+	f.close()
+except:
+	search_dict = {}
+
+
 
 # load stopwords from directory
 f = open('stopwords.txt', 'r')
@@ -143,32 +152,17 @@ def crawl_edit(keyword):
 		except:
 			pass
 	try:
-		divi = soup.find(id='mw-content-text')
-		nextlink = divi.find('a', {'class': 'mw-nextlink'})['href']
+		nextlink = find_next(soup)
 		crawl_to_next(nextlink, keyword)
 	except:
 		pass
 
+def find_next(soup):
+	divi = soup.find(id='mw-content-text')
+	nextlink = divi.find('a', {'class': 'mw-nextlink'})['href']
+	return nextlink
 
-# let's crawl to next pages
-def crawl_to_next(nextlink, keyword, cache_dict = EDIT_DICT, cache_file = EDIT_CACHE):
-	baseurl = 'https://en.wikipedia.org'
-	url = baseurl + nextlink
-
-	params = {}
-	query = url
-	# print(cache_dict)
-	if query not in cache_dict:
-		# print("retrieving data online...")
-		resp = requests.get(query)
-		page = resp.text
-		# soup = BeautifulSoup(page, 'html.parser')
-		cache_dict[query] = page
-		cache_dump = json.dumps(cache_dict)
-		cachefile = open(cache_file, "w")
-		cachefile.write(cache_dump)
-		cachefile.close()
-
+def find_components_edit(query, keyword):
 	html = cache_dict[query]
 	soup = BeautifulSoup(html, 'html.parser')
 	edit_history = soup.find(id="pagehistory")
@@ -192,18 +186,36 @@ def crawl_to_next(nextlink, keyword, cache_dict = EDIT_DICT, cache_file = EDIT_C
 	
 
 
-	# print(search_dict)
+# let's crawl to next pages recursively
+def crawl_to_next(nextlink, keyword, cache_dict = EDIT_DICT, cache_file = EDIT_CACHE):
+	baseurl = 'https://en.wikipedia.org'
+	url = baseurl + nextlink
 
-# initialize_search_dict('michigan')
-# extract_information_wiki('michigan')
-# crawl_edit('michigan')
+	params = {}
+	query = url
+	# print(cache_dict)
+	if query not in cache_dict:
+		# print("retrieving data online...")
+		resp = requests.get(query)
+		page = resp.text
+		# soup = BeautifulSoup(page, 'html.parser')
+		cache_dict[query] = page
+		cache_dump = json.dumps(cache_dict)
+		cachefile = open(cache_file, "w")
+		cachefile.write(cache_dump)
+		cachefile.close()
+
+	find_components_edit(query, keyword)
+	try:
+		nextlink2 = find_next(soup)
+		crawl_to_next(nextlink2, keyword)
+	except:
+		pass
 
 
 
-
-
-def create_db_table():
-	conn = sqlite.connect(DBNAME)
+def create_db_table(dbname):
+	conn = sqlite.connect(dbname)
 	cur = conn.cursor()
 	statement = '''
 		CREATE TABLE IF NOT EXISTS 'keys' (
@@ -459,7 +471,7 @@ def interactive_prompt():
 		json.dump(search_dict,f)
 
 if __name__ == '__main__':
-	create_db_table()
+	create_db_table(DBNAME)
 	conn = sqlite.connect(DBNAME) # start database connection
 	cur = conn.cursor()
 

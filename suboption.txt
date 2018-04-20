@@ -1,0 +1,15 @@
+Choose an option:
+*back
+	go back to main options
+
+*word count
+	view word count statistics from Wiki article
+
+*edit king
+	view recent edits statistics from editors of this Wiki article
+
+*edit by year
+	view edits by year
+
+*edit by time
+	view edits by time of the day

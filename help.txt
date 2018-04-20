@@ -1,0 +1,10 @@
+Commands available:
+
+keyword
+	Enter any keywords
+
+*help
+	brings out help text
+
+*history
+	Short summary of your past search results
